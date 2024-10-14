@@ -3,7 +3,11 @@ const sql = require('mssql')
 const fs = require('fs')
 const path = require('path')
 
-require('electron-reload')(__dirname)
+//require('electron-reload')(__dirname)
+
+/*require('electron-reload')(path.join(__dirname), {
+    electron: path.join(__dirname, 'node_modules', '.bin', 'electron'), // Electron'un yolunu belirtiyoruz
+});*/
 
 let mainWindow
 
@@ -92,13 +96,13 @@ function triggerAllGroupsForDB (db) {
 }
 
 const triggerDB = () => {
-  setInterval(() => {
+  /*setInterval(() => {
     mainWindow.webContents.send('sp-status', {
       db: 'FIRAT',
       message: `TEST.`,
       tarih: getCurrentDateTime()
     })
-  }, 1000)
+  }, 1000)*/
 
   isCanceled = false
 
