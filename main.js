@@ -9,6 +9,8 @@ const path = require('path')
     electron: path.join(__dirname, 'node_modules', '.bin', 'electron'), // Electron'un yolunu belirtiyoruz
 });*/
 
+app.disableHardwareAcceleration();
+
 let mainWindow
 
 const createWindow = () => {
