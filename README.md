@@ -1,3 +1,4 @@
+```
 Example dbconfig.json
 {
     "databases": [
@@ -18,5 +19,5 @@ Example dbconfig.json
       }
     ]
   }
-
+```
 You can use multiple databases working parallel
