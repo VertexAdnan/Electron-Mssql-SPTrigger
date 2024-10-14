@@ -28,7 +28,11 @@ const createWindow = () => {
   triggerDB()
 }
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+    initializeLogFile();
+    logMessage('Uygulama başlatıldı.');
+    createWindow();
+})
 
 const dbConfigPath = path.join(__dirname, 'dbconfig.json')
 const dbConfigs = JSON.parse(fs.readFileSync(dbConfigPath, 'utf8')).databases
@@ -37,6 +41,8 @@ const spConfigPath = path.join(__dirname, 'storedProcedures.json')
 const spConfigs = JSON.parse(fs.readFileSync(spConfigPath, 'utf8')).databases
 
 let isCanceled = false
+
+const logFilePath = path.join(__dirname, 'server-logs.txt');
 
 async function triggerStoredProcedureGroup (db, group) {
   if (isCanceled) return
@@ -50,11 +56,15 @@ async function triggerStoredProcedureGroup (db, group) {
       tarih: getCurrentDateTime(),
       message: `Group ${group} not found.`
     })
+    logMessage(`Group ${group} not found.`)
     return
   }
 
   try {
-    await sql.connect(db.config)
+    const connection = await sql.connect(db.config)
+
+    if(!connection) logMessage('connection failed: ', connection)
+
     for (const sp of spGroup.procedures) {
       // Change to access `procedures` array
       if (isCanceled) break
@@ -63,12 +73,14 @@ async function triggerStoredProcedureGroup (db, group) {
         tarih: getCurrentDateTime(),
         message: `${sp} executing in group ${group}.`
       })
+      logMessage(`${sp} executing in group ${group}.`)
       const result = await sql.query(`EXEC ${sp}`)
       mainWindow.webContents.send('sp-status', {
         db: db.name,
         tarih: getCurrentDateTime(),
         message: `${sp} executed in group ${group}.`
       })
+      logMessage(`${sp} executed in group ${group}.`)
 
       mainWindow.webContents.send('sp-tarih', {
         db: db.name,
@@ -81,9 +93,29 @@ async function triggerStoredProcedureGroup (db, group) {
       tarih: getCurrentDateTime(),
       message: `Error in group ${group}: ${err.message}`
     })
+    logMessage(err.message);
   } finally {
     sql.close()
   }
+}
+
+function initializeLogFile() {
+    if (!fs.existsSync(logFilePath)) {
+        fs.writeFileSync(logFilePath, ''); 
+    } else {
+        fs.truncateSync(logFilePath, 0);
+    }
+}
+
+function logMessage(message) {
+    const timestamp = new Date().toISOString();
+    const logEntry = `[${timestamp}] ${message}\n`;
+
+    fs.appendFile(logFilePath, logEntry, (err) => {
+        if (err) {
+            console.error('Log yazma hatası:', err);
+        }
+    });
 }
 
 function triggerAllGroupsForDB (db) {
@@ -109,6 +141,7 @@ const triggerDB = () => {
   Promise.all(dbConfigs.map(db => triggerAllGroupsForDB(db)))
     .then(() => {
       console.log('All procedures executed.')
+      logMessage('All procedures executed.')
 
       // Set up the timeout for each database group
       dbConfigs.forEach(db => {
@@ -124,6 +157,7 @@ const triggerDB = () => {
               console.log(
                 `Re-triggering group ${group} for database ${db.name}`
               )
+              logMessage(`Re-triggering group ${group} for database ${db.name}`)
               triggerStoredProcedureGroup(db, group)
             }
           }, timeout)
