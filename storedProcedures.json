@@ -1,0 +1,14 @@
+{
+    "databases": [
+      {
+        "name": "FIRAT",
+        "procedures": {
+          "group1": {
+            "procedures": ["RP_Stoklar", "RP_StokFiyatTanimlari"],
+            "timeout": 30000 
+          }
+        }
+      }
+    ]
+  }
+  

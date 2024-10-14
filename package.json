@@ -1,0 +1,29 @@
+{
+  "name": "BSKSync",
+  "version": "1.0.0",
+  "description": "Hello World!",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron ."
+  },
+  "author": "Jane Doe",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^32.2.0",
+    "electron-reload": "^2.0.0-alpha.1"
+  },
+  "dependencies": {
+    "express": "^4.21.1",
+    "mssql": "^11.0.1",
+    "node-cron": "^3.0.3"
+  },
+  "build": {
+    "appId": "com.example.yourapp",
+    "files": [
+      "dist/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ]
+  }
+}

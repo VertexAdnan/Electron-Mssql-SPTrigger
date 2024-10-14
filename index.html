@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stored Procedure Tetikleyici</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #databases div {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        /*div {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }*/
+
+        textarea {
+            margin-top: 10px;
+            width: 100%;
+            resize: none;
+        }
+        .dbitem {
+            display: grid;
+        }
+    </style>
+</head>
+<body>
+    
+    <!-- Manuel 
+    <button id="trigger">Stored Procedure Tetikle</button>
+    <button id="cancel">Stored Procedure Durdur</button>
+     Menuel -->
+    <div id="databases" style="width: 100%; display: grid"></div>
+
+    <script>
+        const { ipcRenderer } = require('electron')
+
+        const databases = ["FIRAT", "FIRAT"]
+
+        window.onload = () => {
+            const dbContainer = document.getElementById('databases')
+
+            databases.forEach(db => {
+                const dbDiv = document.createElement('div')
+                dbDiv.innerHTML = `
+                <div style="display: grid; padding: 10px">
+                    <h2>${db}</h2>
+                    <h3>Son Güncelleme: <span style="color: red" id="${db}tarih">0000-00-00 00:00:00</span></h3>
+                    </div>
+                    <textarea style="width: 75%" readonly id="${db}-status" rows="10" cols="50"></textarea>
+                    
+                `
+                dbContainer.appendChild(dbDiv)
+            })
+        }
+
+        /*document.getElementById('trigger').addEventListener('click', () => {
+            ipcRenderer.send('trigger-sp')
+        })
+
+        document.getElementById('cancel').addEventListener('click', () => {
+            ipcRenderer.send('cancel-sp')
+        })*/
+
+        ipcRenderer.on('sp-status', (event, data) => {
+
+            const statusTextarea = document.getElementById(`${data.db}-status`)
+            statusTextarea.value += `${data.tarih}: ${data.message}\n`
+            statusTextarea.setAttribute('readonly', true)
+            statusTextarea.scrollTop = statusTextarea.scrollHeight;
+        })
+
+        ipcRenderer.on('sp-tarih', (event, data) => {
+            const tarihdiv = document.getElementById(`${data.db}tarih`)
+            tarihdiv.innerHTML = data.tarih
+            tarihdiv.style.color = 'green'
+        })
+    </script>
+</body>
+</html>
