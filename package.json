@@ -14,9 +14,7 @@
     "electron-reload": "^2.0.0-alpha.1"
   },
   "dependencies": {
-    "express": "^4.21.1",
-    "mssql": "^11.0.1",
-    "node-cron": "^3.0.3"
+    "mssql": "^11.0.1"
   },
   "build": {
     "appId": "com.example.yourapp",
