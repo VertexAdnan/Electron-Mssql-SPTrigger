@@ -25,12 +25,6 @@
             margin-top: 20px;
         }
 
-        /*div {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }*/
-
         textarea {
             margin-top: 10px;
             width: 100%;
@@ -43,55 +37,46 @@
 </head>
 <body>
     
-    <!-- Manuel 
-    <button id="trigger">Stored Procedure Tetikle</button>
-    <button id="cancel">Stored Procedure Durdur</button>
-     Menuel -->
     <div id="databases" style="width: 100%; display: grid"></div>
 
     <script>
         const { ipcRenderer } = require('electron')
 
-        const databases = ["FIRAT"]
+        // Backend'den veritabanı isimlerini alıyoruz
+        ipcRenderer.send('get-databases');
 
-        window.onload = () => {
-            const dbContainer = document.getElementById('databases')
+        // Backend'den gelen veritabanı isimlerini işliyoruz
+        ipcRenderer.on('databases-list', (event, databases) => {
+            const dbContainer = document.getElementById('databases');
+            dbContainer.innerHTML = ''; // Önce varsa eski listeyi temizle
 
             databases.forEach(db => {
-                const dbDiv = document.createElement('div')
+                const dbDiv = document.createElement('div');
                 dbDiv.innerHTML = `
                 <div style="display: grid; padding: 10px">
                     <h2>${db}</h2>
                     <h3>Son Güncelleme: <span style="color: red" id="${db}tarih">0000-00-00 00:00:00</span></h3>
                     </div>
                     <textarea style="width: 75%" readonly id="${db}-status" rows="10" cols="50"></textarea>
-                    
-                `
-                dbContainer.appendChild(dbDiv)
-            })
-        }
+                `;
+                dbContainer.appendChild(dbDiv);
+            });
+        });
 
-        /*document.getElementById('trigger').addEventListener('click', () => {
-            ipcRenderer.send('trigger-sp')
-        })
-
-        document.getElementById('cancel').addEventListener('click', () => {
-            ipcRenderer.send('cancel-sp')
-        })*/
-
+        // Stored procedure status mesajları
         ipcRenderer.on('sp-status', (event, data) => {
-
-            const statusTextarea = document.getElementById(`${data.db}-status`)
-            statusTextarea.value += `${data.tarih}: ${data.message}\n`
-            statusTextarea.setAttribute('readonly', true)
+            const statusTextarea = document.getElementById(`${data.db}-status`);
+            statusTextarea.value += `${data.tarih}: ${data.message}\n`;
+            statusTextarea.setAttribute('readonly', true);
             statusTextarea.scrollTop = statusTextarea.scrollHeight;
-        })
+        });
 
+        // Stored procedure tarih güncellemesi
         ipcRenderer.on('sp-tarih', (event, data) => {
-            const tarihdiv = document.getElementById(`${data.db}tarih`)
-            tarihdiv.innerHTML = data.tarih
-            tarihdiv.style.color = 'green'
-        })
+            const tarihdiv = document.getElementById(`${data.db}tarih`);
+            tarihdiv.innerHTML = data.tarih;
+            tarihdiv.style.color = 'green';
+        });
     </script>
 </body>
 </html>

@@ -1,2 +1,2 @@
-[2024-10-14T11:16:04.332Z] Uygulama başlatıldı.
-[2024-10-14T11:16:04.740Z] RP_Stoklar executing in group group1.
+[2024-10-14T13:23:07.766Z] Uygulama başlatıldı.
+[2024-10-14T13:23:08.162Z] RP_Stoklar executing in group group1.

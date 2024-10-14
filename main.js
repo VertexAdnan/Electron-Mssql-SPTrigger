@@ -5,11 +5,7 @@ const path = require('path')
 
 //require('electron-reload')(__dirname)
 
-/*require('electron-reload')(path.join(__dirname), {
-    electron: path.join(__dirname, 'node_modules', '.bin', 'electron'), // Electron'un yolunu belirtiyoruz
-});*/
-
-app.disableHardwareAcceleration();
+// app.disableHardwareAcceleration();
 
 let mainWindow
 
@@ -68,7 +64,6 @@ async function triggerStoredProcedureGroup (db, group) {
     if(!connection) logMessage('connection failed: ', connection)
 
     for (const sp of spGroup.procedures) {
-      // Change to access `procedures` array
       if (isCanceled) break
       mainWindow.webContents.send('sp-status', {
         db: db.name,
@@ -98,6 +93,8 @@ async function triggerStoredProcedureGroup (db, group) {
     logMessage(err.message);
   } finally {
     sql.close()
+    const timeout = spConfig.procedures[group].timeout;
+    setTimeout(() => triggerStoredProcedureGroup(db, group), timeout); // Timeout sonrası tekrar tetikle
   }
 }
 
@@ -130,14 +127,6 @@ function triggerAllGroupsForDB (db) {
 }
 
 const triggerDB = () => {
-  /*setInterval(() => {
-    mainWindow.webContents.send('sp-status', {
-      db: 'FIRAT',
-      message: `TEST.`,
-      tarih: getCurrentDateTime()
-    })
-  }, 1000)*/
-
   isCanceled = false
 
   Promise.all(dbConfigs.map(db => triggerAllGroupsForDB(db)))
@@ -145,15 +134,13 @@ const triggerDB = () => {
       console.log('All procedures executed.')
       logMessage('All procedures executed.')
 
-      // Set up the timeout for each database group
+      // Her grup için interval belirle
       dbConfigs.forEach(db => {
         const groups = Object.keys(
           spConfigs.find(sp => sp.name === db.name).procedures
         )
         groups.forEach(group => {
-          const timeout = spConfigs.find(sp => sp.name === db.name).procedures[
-            group
-          ].timeout
+          const timeout = spConfigs.find(sp => sp.name === db.name).procedures[group].timeout;
           setTimeout(() => {
             if (!isCanceled) {
               console.log(
@@ -168,6 +155,11 @@ const triggerDB = () => {
     })
     .catch(err => console.error('Error executing procedures:', err))
 }
+
+ipcMain.on('get-databases', (event) => {
+    const dbNames = dbConfigs.map(db => db.name);
+    event.reply('databases-list', dbNames);
+});
 
 function getCurrentDateTime () {
   const now = new Date()
