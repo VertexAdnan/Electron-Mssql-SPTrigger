@@ -3,8 +3,6 @@ const sql = require('mssql')
 const fs = require('fs')
 const path = require('path')
 
-//require('electron-reload')(__dirname)
-
 // app.disableHardwareAcceleration();
 
 let mainWindow
@@ -42,6 +40,7 @@ let isCanceled = false
 
 const logFilePath = path.join(__dirname, 'server-logs.txt');
 
+// Stored Procedure tetikleme ve 10 saniye bekleme fonksiyonu
 async function triggerStoredProcedureGroup (db, group) {
   if (isCanceled) return
 
@@ -65,6 +64,7 @@ async function triggerStoredProcedureGroup (db, group) {
 
     for (const sp of spGroup.procedures) {
       if (isCanceled) break
+
       mainWindow.webContents.send('sp-status', {
         db: db.name,
         tarih: getCurrentDateTime(),
@@ -72,6 +72,7 @@ async function triggerStoredProcedureGroup (db, group) {
       })
       logMessage(`${sp} executing in group ${group}.`)
       const result = await sql.query(`EXEC ${sp}`)
+
       mainWindow.webContents.send('sp-status', {
         db: db.name,
         tarih: getCurrentDateTime(),
@@ -83,6 +84,9 @@ async function triggerStoredProcedureGroup (db, group) {
         db: db.name,
         tarih: getCurrentDateTime()
       })
+
+      // Her stored procedure'den sonra 10 saniye bekle
+      await new Promise(resolve => setTimeout(resolve, 10000));
     }
   } catch (err) {
     mainWindow.webContents.send('sp-status', {
@@ -97,6 +101,37 @@ async function triggerStoredProcedureGroup (db, group) {
     setTimeout(() => triggerStoredProcedureGroup(db, group), timeout); // Timeout sonrası tekrar tetikle
   }
 }
+
+// Veritabanı gruplarını sıralı şekilde tetikleyen fonksiyon
+async function triggerAllGroupsForDB (db) {
+  const groups = Object.keys(
+    spConfigs.find(sp => sp.name === db.name).procedures
+  )
+
+  // Her bir grup sırayla çalıştırılıyor
+  for (const group of groups) {
+    if (isCanceled) break;
+    await triggerStoredProcedureGroup(db, group);
+  }
+}
+
+const triggerDB = () => {
+  isCanceled = false
+
+  Promise.all(dbConfigs.map(async db => {
+    await triggerAllGroupsForDB(db)
+  }))
+  .then(() => {
+    console.log('All procedures executed.')
+    logMessage('All procedures executed.')
+  })
+  .catch(err => console.error('Error executing procedures:', err))
+}
+
+ipcMain.on('get-databases', (event) => {
+    const dbNames = dbConfigs.map(db => db.name);
+    event.reply('databases-list', dbNames);
+});
 
 function initializeLogFile() {
     if (!fs.existsSync(logFilePath)) {
@@ -116,50 +151,6 @@ function logMessage(message) {
         }
     });
 }
-
-function triggerAllGroupsForDB (db) {
-  const groups = Object.keys(
-    spConfigs.find(sp => sp.name === db.name).procedures
-  )
-  return Promise.all(
-    groups.map(group => triggerStoredProcedureGroup(db, group))
-  )
-}
-
-const triggerDB = () => {
-  isCanceled = false
-
-  Promise.all(dbConfigs.map(db => triggerAllGroupsForDB(db)))
-    .then(() => {
-      console.log('All procedures executed.')
-      logMessage('All procedures executed.')
-
-      // Her grup için interval belirle
-      dbConfigs.forEach(db => {
-        const groups = Object.keys(
-          spConfigs.find(sp => sp.name === db.name).procedures
-        )
-        groups.forEach(group => {
-          const timeout = spConfigs.find(sp => sp.name === db.name).procedures[group].timeout;
-          setTimeout(() => {
-            if (!isCanceled) {
-              console.log(
-                `Re-triggering group ${group} for database ${db.name}`
-              )
-              logMessage(`Re-triggering group ${group} for database ${db.name}`)
-              triggerStoredProcedureGroup(db, group)
-            }
-          }, timeout)
-        })
-      })
-    })
-    .catch(err => console.error('Error executing procedures:', err))
-}
-
-ipcMain.on('get-databases', (event) => {
-    const dbNames = dbConfigs.map(db => db.name);
-    event.reply('databases-list', dbNames);
-});
 
 function getCurrentDateTime () {
   const now = new Date()
